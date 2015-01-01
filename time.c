@@ -1,4 +1,6 @@
 /*
+ *	Clock
+ *
  *	D12-D4 - Segments
  *	A0-A4 - Digits
  *
@@ -9,12 +11,15 @@
 
 #define NUM_DIG 10
 
-// 1 ms interval
+// 5ms interval
 
 char j=0;
+unsigned char k = 0;
+//unsigned char sec = 0;
 
 ISR(TIMER0_COMPA_vect)
 {
+	k++;
 	PORTC = (1<<j);
 	j++;
 	if(j>3)
@@ -40,26 +45,15 @@ struct digit {
 	0x04, 0x00
 };
 
-// 1 sec interval
+char time[4] = {0,0,0,0};
 
-char i=0;
-ISR(TIMER1_COMPA_vect)
-{
-	
-	//PORTB=digits[i].PB;
-	//PORTD=digits[i].PD;
-	i++;
-	if(i>(NUM_DIG-1))
-		i=0;
-	
-}
 int main() {
 
 	DDRC = 0xFF;
 	DDRB = 0x1F;
 	DDRD = 0xE0;
 
-	// Interrupt on compare: 0x4E
+	// Interrupt on compare: 0x4E (78)
 	// Prescaler bits: CS02 and CS00
 	// CTC is ON
 	
@@ -69,30 +63,47 @@ int main() {
 	TCCR0B = (1<<CS02) | (1<<CS00);
    	// Enable interrupt on comapre for Timer0
 	TIMSK0 = (1<<OCIE0A);
-	// Interrup when Timer value equal with 0x4E
+	// Interrup when Timer value equal with 0x4E (78)
 	OCR0A = 0x4E;
 	
-	// Interrupt on compare: 0x3D09
-	// Prescaler bits: CS12 and CS10 
-	// CTC is ON
-	
-	// Enable CTC
-	TCCR1A = (1<<WGM12);
-	// Prescaler settings 
-	TCCR1B = (1<<CS12)|(1<<CS10);
-	// Interrupt compare value
-	OCR1AH = 0x3D;
-	OCR1AL = 0x09;
-	// Enable interrupt on compare for Timer1
-	TIMSK1 = (1<<OCIE1A);
-	
-	// Allow interrupt
+	// Allow global interrupt
 	sei();
 
+	char t = 0;
 	while(1)
 	{
+	
+		PORTB = digits[time[j]].PB;
+		PORTD = digits[time[j]].PD;	
 
-		PORTB = digits[i].PB;
-		PORTD = digits[i].PD;		
+		if(k == 200)
+		{
+			k=0;	
+			time[1]++;
+			
+			if (time[1] > 9)
+			{
+				time[1] = 0;
+				time[2]++;
+
+				if (time[2] > 5)
+				{
+					time[2] = 0;
+					time[3]++;
+
+					if (time[3] > 9)
+					{
+						time[3] = 0;
+						time[0]++;
+
+						if (time[0] > 2)
+						{
+							time[0] = 0;		
+						}	
+					}
+				}
+			}
+		}	
+			
 	}
 }
