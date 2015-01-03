@@ -17,22 +17,18 @@
 #define NUM_DIG 10
 
 // Interrupt when ADC complete conversion
-float adc_data = 0;
-char adc_res[4] = {0,0,0,0};
-float adc_tmp = 0;
+U16 adc_data = 0;
+char ind[4] = {0,0,0,0};
+
 ISR(ADC_vect)
 {
-
-	adc_data = ADCL;
-	adc_data |= (ADCH<<8);
-
+// ADCW without ADLAR bit
+	adc_data  = ADCW;
 }
 
 // 5ms interval
 
 char j=0;
-
-//unsigned char sec = 0;
 
 ISR(TIMER0_COMPA_vect)
 {
@@ -40,10 +36,11 @@ ISR(TIMER0_COMPA_vect)
 	PORTC = (1<<j);
 	j++;
 	if(j>3)
-		j=0;
-	
+		j=0;	
 	
 }
+
+//char adc_table[1000][4];
 
 struct digit {
 	unsigned char PB;
@@ -102,7 +99,7 @@ int main() {
 	
 	ADMUX   = (5<<MUX0);
 	ADMUX  |= (1<<REFS0);
-	ADMUX  |= (1<<ADLAR);
+//	ADMUX  |= (1<<ADLAR);
 
 	ADCSRA  = (7<<ADPS0);
 	ADCSRA |= (1<<ADIE);
@@ -113,15 +110,48 @@ int main() {
 	// Allow global interrupt
 	sei();
 
-	U16 i = 0;
 	while(1)
 	{
-		PORTB = digits[adc_res[j]].PB;
-		PORTD = digits[adc_res[j]].PD;	
-		
-		
+		PORTB = digits[ind[j]].PB;
+		PORTD = digits[ind[j]].PD;		
+		if(adc_data < 200)
+			ind[0] = 0;
+		if(adc_data > 200)
+			ind[0] = 1;
+		if(adc_data > 400)
+			ind[0] = 2;
+		if(adc_data > 600)
+			ind[0] = 3;
+		if(adc_data > 800)
+			ind[0] = 4;
+		if(adc_data > 1000)
+			ind[0] = 5;
 
-
-				
+/*		while(volt > 0)
+		{
+			divmod(volt, 10, &r[0]);
+			ind[i++] = (char)r[0];
+			volt = r[1];
+			if(i>3)
+				i=0;
+		}
+*/		
 	}
+
 }
+
+
+void divmod(U16 data, U16 d, U16 *res)
+{
+	U16 r = data;
+	U16 q = 0;
+
+	while(!(r<d))
+	{
+		r = r - d;
+		q = q + 1;
+	}
+	res[0] = r;
+	res[1] = q;
+}
+
