@@ -20,47 +20,58 @@
 U16 adc_data = 0;
 char ind[4] = {0,0,0,0};
 
+
 ISR(ADC_vect)
 {
 // ADCW without ADLAR bit
-	adc_data  = ADCW;
+	adc_data  = ADCL;
+	adc_data  |= (ADCH<<8);
 }
 
 // 5ms interval
 
 char j=0;
-
-ISR(TIMER0_COMPA_vect)
-{
-	
-	PORTC = (1<<j);
-	j++;
-	if(j>3)
-		j=0;	
-	
-}
-
-//char adc_table[1000][4];
+unsigned char k = 0;
+unsigned char p = 0;
 
 struct digit {
 	unsigned char PB;
 	unsigned char PD;
 } digits[NUM_DIG] = 
 {
-	0x01, 0x00,
-	0xEF, 0xDF,
-	0x10, 0x80,
-	0x04, 0x80,
-	0x0C, 0x40,
-	0x04, 0x20,
-	0x00, 0x20,
-	0x0D, 0x80,
-	0x00, 0x00,
-	0x04, 0x00
+		0x01, 0x00,
+		0xEF, 0xDF,
+		0x10, 0x80,
+		0x04, 0x80,
+		0x0C, 0x40,
+		0x04, 0x20,
+		0x00, 0x20,
+		0x0D, 0x80,
+		0x00, 0x00,
+		0x04, 0x00
 };
+
+
+ISR(TIMER0_COMPA_vect)
+{
+	k++;
+	p++;
+	PORTC = (1<<j);
+	j++;
+	if(j>3)
+		j=0;
+
+	PORTB = digits[ind[j]].PB;
+	PORTD = digits[ind[j]].PD;	
+}
 
 int main() {
 	
+/*
+ * 	DEVICES SETTINGS
+ *
+ */
+
 	DDRC = 0x0F;
 	DDRB = 0x1F;
 	DDRD = 0xE0;
@@ -84,7 +95,7 @@ int main() {
 			REFS1:0=01 	-- 	Ref source connected to AVCC pin with 
 						 	capasitor in AREF pin
 			MUX3:0=0101 -- 	5 Channel in ADC
-			ADLAR=1		--	Left adjusted result in Data Registers (ADCH & ADCL)
+			ADLAR=0		--	Left adjusted result in Data Registers (ADCH & ADCL)
 
 		ADCSRA:
 			ADPS2:0=111	--	Source to ADC is CLK/128
@@ -103,29 +114,72 @@ int main() {
 
 	ADCSRA  = (7<<ADPS0);
 	ADCSRA |= (1<<ADIE);
-	ADCSRA |= (1<<ADATE);
+//	ADCSRA |= (1<<ADATE);
 	ADCSRA |= (1<<ADEN);
 	ADCSRA |= (1<<ADSC);
-
 	// Allow global interrupt
 	sei();
 
-	while(1)
+/*
+ *	OTHER 
+ *
+ */ 
+
+	volatile char table[200][4] = 
 	{
-		PORTB = digits[ind[j]].PB;
-		PORTD = digits[ind[j]].PD;		
-		if(adc_data < 200)
-			ind[0] = 0;
-		if(adc_data > 200)
-			ind[0] = 1;
-		if(adc_data > 400)
-			ind[0] = 2;
-		if(adc_data > 600)
-			ind[0] = 3;
-		if(adc_data > 800)
-			ind[0] = 4;
-		if(adc_data > 1000)
-			ind[0] = 5;
+		{0,0,0,0}, {0,0,2,5}, {0,0,5,0}, {0,0,7,5}, {0,1,0,0},
+	    {0,1,2,5}, {0,1,5,0}, {0,1,7,5}, {0,2,0,0}, {0,2,2,5},
+		{0,2,5,0}, {0,2,7,5}, {0,3,0,0}, {0,3,2,5}, {0,3,5,0},
+		{0,3,7,5}, {0,4,0,0}, {0,4,2,5}, {0,4,5,0}, {0,5,7,5},
+		{0,6,0,0}, {0,6,2,5}, {0,6,5,0}, {0,6,7,5}, {0,7,0,0},
+		{0,7,2,5}, {0,7,5,0}, {0,7,7,5}, {0,8,0,0}, {0,8,2,5},
+		{0,8,5,0},
+	};
+
+	U16 i = 0;
+	
+	while(1)
+	{	
+		while(adc_data != 0)
+		{
+			
+			adc_data = adc_data - 1;
+			ind[1] = ind[1]+1;
+			if(ind[1] > 9)
+			{
+				ind[1]=0;
+				ind[2]++;
+
+				if(ind[2] > 9)
+				{
+					ind[2]=0;
+					ind[3]++;
+					if(ind[3] > 9)
+					{
+						ind[3]=0;
+						ind[0]++;
+						if(ind[0]>5 && ind[1]>0 && ind[2]>0 && ind[3]>0)
+							ind[0]=5;
+							ind[1]=0;
+							ind[2]=0;
+							ind[3]=0;
+					}
+				}
+			}
+		}
+		
+	if(adc_data == 0 && k == 100)
+	{
+		k = 0;
+		ADCSRA |= (1<<ADSC);
+		ind[0] = 0;
+		ind[1] = 0;
+		ind[2] = 0;
+		ind[3] = 0;
+	}
+
+	}//while(1)
+
 
 /*		while(volt > 0)
 		{
@@ -136,22 +190,7 @@ int main() {
 				i=0;
 		}
 */		
-	}
-
 }
 
 
-void divmod(U16 data, U16 d, U16 *res)
-{
-	U16 r = data;
-	U16 q = 0;
-
-	while(!(r<d))
-	{
-		r = r - d;
-		q = q + 1;
-	}
-	res[0] = r;
-	res[1] = q;
-}
 
