@@ -8,6 +8,7 @@
 #include <avr/interrupt.h>
 
 void send_char(char data);
+void print(char *str);
 
 int main(void) {
 	
@@ -36,25 +37,18 @@ int main(void) {
 
 	UCSR0A = (1<<UDRE0);
 
-	char* mes="Hello World!";
+	char* mes=" Hello World!";
 	char* pm;
+
 	pm = &mes[0];
 
 	while(1)
-	{
-		 
-		while(*mes != '\0')
-		{
-
-			send_char(*mes++);	
-		}
-
-		mes = pm;
+	{		 
 		
+		print(mes);
+		mes = pm;
 	}	
-
 }
-
 
 void send_char(char data)
 {
@@ -62,3 +56,13 @@ void send_char(char data)
 		{;}
 	UDR0 = data;
 }
+
+void print(char *str)
+{
+	while(*str != '\0')
+	{
+		send_char(*str++);
+	}
+}
+
+
