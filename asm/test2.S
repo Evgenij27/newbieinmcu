@@ -19,18 +19,14 @@ main:
 	rjmp loop
 
 timer:
-	ldi r18, 0x00
+	ldi r18, 0xFF
 	out _SFR_IO_ADDR(PORTB), r18
 	ret
 	
 loop: 
-	ldi r18, 0xFF
-	ldi r19, 0x00
-	out _SFR_IO_ADDR(PORTB), r18
 	lds r20, _SFR_IO_ADDR(TIFR1)
 	sbrc r20, 1
 	rcall timer
-	out _SFR_IO_ADDR(PORTB), r19
 	rjmp loop
 
 
