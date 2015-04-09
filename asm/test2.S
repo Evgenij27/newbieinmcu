@@ -6,7 +6,7 @@
 main:
 	ldi r16, (1<<PB5)
 	out _SFR_IO_ADDR(DDRB), r16
-	out _SFR_IO_ADDR(PORTB), r16
+//	out _SFR_IO_ADDR(PORTB), r16
 	ldi r16, (1<<WGM12)|(1<<CS12)
 	sts _SFR_IO_ADDR(TCCR1B), r16
 	ldi r16, 0x24
@@ -28,7 +28,8 @@ loop:
 	ldi r19, 0x00
 	out _SFR_IO_ADDR(PORTB), r18
 	lds r20, _SFR_IO_ADDR(TIFR1)
-	sbrc _SFR_IO_ADDR(TIFR1), OCF1A
+	sbrc r20, 1
+	rcall timer
 	out _SFR_IO_ADDR(PORTB), r19
 	rjmp loop
 
