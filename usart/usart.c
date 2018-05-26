@@ -36,11 +36,7 @@ ISR(ADC_vect)
 {
 	adc_data  = ADCL;
 	adc_data |= (ADCH<<8);
-	//print("OK!\n\r");
-	
 
-//	ATOMIC_BLOCK(ATOMIC_FORCEON)
-//	{
 	if(adc_data != prev_adc_data)
 		{	
 		prev_adc_data = adc_data;
@@ -59,27 +55,9 @@ ISR(ADC_vect)
 		disp[3]=0;
 		
 		for(k=0; k<5; k++)
-			send_char(8);
-//		ADCSRA |= (1<<ADSC);
-	
+			send_char(8);	
 		}
-//	}
-	ADCSRA |= (1<<ADSC);
-/*	
-	adc2ind(adc_data, &disp[0]);
-	send_char(digit_table[disp[THIRD]]);
-	send_char(46);
-	send_char(digit_table[disp[SECOND]]);
-	send_char(digit_table[disp[FIRST]]);
-	send_char(digit_table[disp[ZERO]]);
-	print("\n\r");
-*/	
-
-/*	if(k < 20)
-		ADCSRA |= (1<<ADSC);
-	else
-		ADCSRA |= (0<<ADSC);
-*/	
+	ADCSRA |= (1<<ADSC);	
 }
 
 
@@ -89,43 +67,30 @@ int main(void) {
  * 	DEVICES SETTINGS
  *
  */
-
 	DDRB = 0xFF;;
 	
 // 	USART0 Init
-
 //	Set BAUD rate 9600
-
 	UBRR0H = 0x00;
 	UBRR0L = 0x67;
-
 //	Set frame format
-
 	UCSR0C = (3<<UCSZ00);
-
 //	Enable Transmitter & Receiver
-
 	UCSR0B = (1<<RXEN0) | (1<<TXEN0);
-
 //	UDRE0
-
 	UCSR0A = (1<<UDRE0);
-
 // ADC Settings
-
 	ADMUX   = (5<<MUX0) | (1<<REFS0);
 	ADCSRA  = (7<<ADPS0) | (1<<ADIE) | (1<<ADEN);
 	ADCSRA |= (1<<ADSC); 
-
 	sei();
-
 	char* mes=" Hello World!";
 	char* pm;
 	char i=0;
-
 	pm = &mes[0];
 	char* c;
 	unsigned char ch;
+	
 	while(1)
 	{		 			
 	//	print(mes);		
